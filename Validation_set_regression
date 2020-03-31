@@ -1,0 +1,2232 @@
+#Re-run identical set-up formatting from primary backwards regression
+#Analysis subsets to 50-50 randomly split training and testing sets. Procedures for training are identical to full sample regression.
+
+
+setwd("~/...")
+
+tbi <- read.csv("ABCD_mTBI_Dataset_Final_2.csv", header=TRUE)
+tbi_pca <- read.csv("ABCD_Concussion_2.csv", header=TRUE)
+
+
+#Prep data for analysis
+
+tbi$conc1 = 0
+tbi$conc1[(tbi$tbi_1 == 1 & tbi$tbi_1b == 1) | (tbi$tbi_1 == 1 & tbi$tbi_1c == 1)] <- 1
+tbi$conc1[(tbi$tbi_1 == 1 & tbi$tbi_1b == 2)] <- 2
+tbi$conc1[(tbi$tbi_1 == 1 & tbi$tbi_1b == 3)] <- 3
+
+
+table(tbi$conc1)
+#   0      1     2     3 
+#11381   272     2     2 
+
+tbi$conc2 = 0
+tbi$conc2[(tbi$tbi_2 == 1 & tbi$tbi_2b == 1) | (tbi$tbi_2 == 1 & tbi$tbi_2c == 1)] <- 1
+tbi$conc2[(tbi$tbi_2 == 1 & tbi$tbi_2b == 2)] <- 2
+tbi$conc2[(tbi$tbi_2 == 1 & tbi$tbi_2b == 3)] <- 3
+
+table(tbi$conc2)
+#0     1 
+#11630    27 
+
+tbi$conc3 = 0
+tbi$conc3[(tbi$tbi_3 == 1 & tbi$tbi_3b == 1) | (tbi$tbi_3 == 1 & tbi$tbi_3c == 1)] <- 1
+tbi$conc3[(tbi$tbi_3 == 1 & tbi$tbi_3b == 2)] <- 2
+tbi$conc3[(tbi$tbi_3 == 1 & tbi$tbi_3b == 3)] <- 3
+
+table(tbi$conc3)
+#0         1     2     3 
+#11400   255     1     1 
+
+tbi$conc4 = 0
+tbi$conc4[(tbi$tbi_4 == 1 & tbi$tbi_4b == 1) | (tbi$tbi_4 == 1 & tbi$tbi_4c == 1)] <- 1
+tbi$conc4[(tbi$tbi_4 == 1 & tbi$tbi_4b == 2)] <- 2
+tbi$conc4[(tbi$tbi_4 == 1 & tbi$tbi_4b == 3)] <- 3
+
+table(tbi$conc4)
+#0         1 
+#11647    10 
+
+tbi$conc5 = 0
+tbi$conc5[(tbi$tbi_5 == 1 & tbi$tbi_5b == 1) | (tbi$tbi_5 == 1 & tbi$tbi_5c == 1)] <- 1
+tbi$conc5[(tbi$tbi_5 == 1 & tbi$tbi_5b == 2)] <- 2
+tbi$conc5[(tbi$tbi_5 == 1 & tbi$tbi_5b == 3)] <- 3
+
+table(tbi$conc5)
+#    0 
+#11657 
+
+tbi$conc6 = 0
+tbi$conc6[(tbi$tbi_6o == 1 & tbi$tbi_6q == 1) & (tbi$tbi_6p-tbi$tbi_6r == 0)] <- 1
+tbi$conc6[(tbi$tbi_6o == 1 & tbi$tbi_6q > 1) | (tbi$tbi_6o == 1 & tbi$tbi_6r > 0)] <- 2
+
+table(tbi$conc6)
+#0         2 
+#11652     5
+
+tbi$conc7=0
+tbi$conc7[(tbi$tbi_7a == 1 & tbi$tbi_7c1 == 1) | (tbi$tbi_7c1 == 1 & tbi$tbi_7c2 == 1)] <- 1
+tbi$conc7[(tbi$tbi_7a == 1 & tbi$tbi_7c1 == 2)] <- 2
+tbi$conc7[(tbi$tbi_7a == 1 & tbi$tbi_7c1 == 3)] <- 3
+
+table(tbi$conc7)
+#    0     1     2     3 
+#11653     2     1     1 
+
+tbi$conc7a=0
+tbi$conc7a[(tbi$tbi_7g == 1 & tbi$tbi_7i == 1)] <- 1
+
+table(tbi$conc7a)
+#    0     1 
+#11655     2 
+
+tbi$tbiconc8=0
+tbi$conc8[(tbi$tbi_8g == 1 & tbi$tbi_8i > 0)] <- 1
+
+table(tbi$conc8)
+#0
+
+tbi$concussion = 0
+tbi$concussion[tbi$conc1 == 1 | tbi$conc2 == 1 | tbi$conc3 == 1 | tbi$conc4 == 1 | tbi$conc5 == 1 | tbi$conc6 == 1 | tbi$conc7 == 1 | tbi$conc7a == 1 | tbi$conc8 == 1] <- 1
+tbi$concussion[tbi$conc1 > 1 | tbi$conc2 > 1 | tbi$conc3 > 1 | tbi$conc4 > 1 | tbi$conc5 > 1 | tbi$conc6 > 1 | tbi$conc7 > 1 | tbi$conc7a > 1 | tbi$conc8 > 1] <- 2
+
+table(tbi$concussion)
+#   0     1     2 
+#11209   436    12
+
+
+################################
+################################
+## Rename Some Core Variables ##
+################################
+################################
+
+names(tbi)[which(names(tbi)=="demo_brthdat_v2")] = "Age"; 
+names(tbi)[which(names(tbi)=="race.ethnicity.4level")] = "Race"
+names(tbi)[which(names(tbi)=="demo_comb_income_v2")] = "HouseholdIncome"
+names(tbi)[which(names(tbi)=="site_id_l")] = "Site"
+names(tbi)[which(names(tbi)=="rel_family_id")] = "Relationship"
+
+names(tbi)[which(names(tbi)=="nihtbx_picvocab_agecorrected")] = "PicVocab"
+names(tbi)[which(names(tbi)=="nihtbx_flanker_agecorrected")] = "Flanker"
+names(tbi)[which(names(tbi)=="nihtbx_list_agecorrected")] = "List"
+names(tbi)[which(names(tbi)=="nihtbx_cardsort_agecorrected")] = "CardSort"
+names(tbi)[which(names(tbi)=="nihtbx_pattern_agecorrected")] = "Pattern"
+names(tbi)[which(names(tbi)=="nihtbx_picture_agecorrected")] = "Picture"
+names(tbi)[which(names(tbi)=="nihtbx_reading_agecorrected")] = "Reading"
+
+#Copy over variables from tbi_pca to tbi
+tbi$pc1 <- tbi_pca$pc1
+tbi$pc2 <- tbi_pca$pc2
+tbi$site_num  <- tbi_pca$site_num
+tbi$fam_num <- tbi_pca$fam_num
+tbi$fam_size <- tbi_pca$fam_size
+
+#Remove participants with moderate to severe TBI history
+
+data <- subset(tbi, (concussion < 2))
+table(data$concussion)
+
+data <- within(data, Race <- relevel(Race, ref = "White"))
+
+#Split data into trianing and testing sets 
+
+set.seed(22)
+ind <- sample(2, nrow(data), replace = T, prob = c(.5,.5)) #50% training, 50% test data
+train <- data[ind==1,]
+test <- data[ind==2,]
+
+#5860 were sorted into train and 5783 were sorted into test
+
+
+#Run the same LRT-based backwards regression
+
+#Run Demographics Regression
+
+
+library(gamm4)
+binarydems <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex, random = ~(1|site_num), 
+                    data=train,
+                    family=binomial)
+
+summary(binarydems$mer)
+summary(binarydems$gam)
+anova(binarydems$mer)
+anova(binarydems$gam)
+#Baseline Deviance 1780.530
+
+
+#HouseholdIncome
+binarydem.01 <- gamm4(concussion ~ Race + Ethnicity + Sex, random = ~(1|site_num),
+                      family=binomial, data=train)
+
+
+binarydem.01$mer
+#Deviance 1784.064 with change in df = 2
+#LRT test 1784.064 - 1780.530 = 3.534: Sig = 0.1708448
+pchisq(3.534, df=2, lower.tail=FALSE)
+
+#Race
+binarydem.02 <- gamm4(concussion ~  HouseholdIncome + Ethnicity + Sex, random = ~(1|site_num),
+                      family=binomial, data=train)
+
+
+binarydem.02$mer
+#Deviance 1787.2573 with change in df = 3
+#LRT test 1787.2573 - 1780.530 = 6.7273: Sig = 0.08111672
+pchisq(6.7273, df=3, lower.tail=FALSE)
+
+
+#Ethnicity
+binarydem.03 <- gamm4(concussion ~  HouseholdIncome + Race + Sex, random = ~(1|site_num), 
+                      family=binomial, data=train)
+
+
+binarydem.03$mer
+#Deviance 1786.8943 with change in df = 1
+#LRT test 1786.8943 - 1780.530 = 6.3643: Sig = 0.0116439
+pchisq(6.3643, df=1, lower.tail=FALSE)
+
+
+#Sex
+binarydem.04 <- gamm4(concussion ~  HouseholdIncome + Race + Ethnicity, random = ~(1|site_num),
+                      family=binomial, data=train)
+
+
+binarydem.04$mer
+#Deviance 1787.7059 with change in df = 1
+#LRT test 1787.7059 - 1780.530 = 7.1759: Sig = 0.007388937
+pchisq(7.1759, df=1, lower.tail=FALSE)
+
+
+#Add remaining variables and complete backwards regression
+
+#####################################
+#####################################
+##############STEP 1#################
+#####################################
+#####################################
+
+binary1 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                   asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 + pc2 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                   cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                 family=binomial, data=train)
+binary1$mer
+
+summary(binary1$mer)
+summary(binary1$gam)
+anova(binary1$mer)
+anova(binary1$gam)
+#Baseline Deviance = 1729.6344: Baseline AIC = 1771.6344
+
+#Manual removal to test LRT change. Analogous to "drop1" command for glm models
+
+
+#HouseholdIncome
+binary1.01 <- gamm4(concussion ~ Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 + pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary1.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary1.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary1.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Overall
+binary1.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_depress_t
+binary1.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_anxdisord_t
+binary1.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary1.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary1.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc2
+binary1.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#cbcl_scr_dsm5_depress_t
+binary1.11 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary1.12 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary1.13 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary1.14 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_opposit_t
+binary1.15 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 +  cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+
+#cbcl_scr_dsm5_conduct_t
+binary1.16 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +  pc2 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#HouseholdIncome
+binary1.01$mer
+#Deviance 1738.2948 with change in df = 2
+#LRT test 1738.2948 - 1729.6344 = 8.6604
+binary1.01p <- pchisq(8.6604, df=2, lower.tail=FALSE)
+
+#Race
+binary1.02$mer
+#Deviance 1735.1685 with change in df = 3
+#LRT test 1735.1685 - 1729.6344 = 5.5341
+binary1.02p <- pchisq(5.5341, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary1.03$mer
+#Deviance 1734.3167 with change in df = 1
+#LRT test 1734.3167 - 1729.6344 = 4.6823
+binary1.03p <- pchisq(4.6823, df=1, lower.tail=FALSE)
+
+#Sex
+binary1.04$mer
+#Deviance 1735.3829 with change in df = 1
+#LRT test 1735.3829 - 1729.6344 = 5.7485
+binary1.04p <- pchisq(5.7485, df=1, lower.tail=FALSE)
+
+#Overall
+binary1.05$mer
+#Deviance 1730.6875 with change in df = 1
+#LRT test 1730.6875 - 1729.6344 = 1.0531
+binary1.05p <- pchisq(1.0531, df=1, lower.tail=FALSE)
+
+#asr_scr_depress_t
+binary1.06$mer
+#Deviance 1729.7542 with change in df = 1
+#LRT test 1729.7542 - 1729.6344 = 0.1198
+binary1.06p <- pchisq(0.1198, df=1, lower.tail=FALSE)
+
+#asr_scr_anxdisord_t
+binary1.07$mer
+#Deviance 1729.6732 with change in df = 1
+#LRT test 1729.6732 - 1729.6344 = 0.0388
+binary1.07p <- pchisq(0.0388, df=1, lower.tail=FALSE)
+
+#asr_scr_somaticpr_t
+binary1.08$mer
+#Deviance 1731.4468 with change in df = 1
+#LRT test 1731.4468 - 1729.6344 = 1.8124
+binary1.08p <- pchisq(1.8124, df=1, lower.tail=FALSE)
+
+#pc1
+binary1.09$mer
+#Deviance 1731.0193 with change in df = 1
+#LRT test 1731.0193 - 1729.6344 = 1.3849
+binary1.09p <- pchisq(1.3849, df=1, lower.tail=FALSE)
+
+#pc2
+binary1.10$mer
+#Deviance 1729.6510 with change in df = 1
+#LRT test 1729.6510 - 1729.6344 = 0.0166: Sig = 0.9092239
+binary1.10p <- pchisq(0.0166, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary1.11$mer
+#Deviance 1732.0988 with change in df = 1
+#LRT test 1732.0988 - 1729.6344 = 2.4644
+binary1.11p <- pchisq(2.4644, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary1.12$mer
+#Deviance 1731.2171 with change in df = 1
+#LRT test 1731.2171 - 1729.6344 = 1.5827
+binary1.12p <- pchisq(1.5827, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary1.13$mer
+#Deviance 1736.9117 with change in df = 1
+#LRT test 1736.9117 - 1729.6344 = 7.2773
+binary1.13p <- pchisq(7.2773, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary1.14$mer
+#Deviance 1731.7719 with change in df = 1
+#LRT test 1731.7719 - 1729.6344 = 2.1375
+binary1.14p <- pchisq(2.1375, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_opposit_t
+binary1.15$mer
+#Deviance 1729.8357 with change in df = 1
+#LRT test 1729.8357 - 1729.6344 = 0.2013
+binary1.15p <- pchisq(0.2013, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_conduct_t
+binary1.16$mer
+#Deviance 1729.772 with change in df = 1
+#LRT test 1729.772 - 1729.6344 = 0.1376
+binary1.16p <- pchisq(0.1376, df=1, lower.tail=FALSE)
+
+max(binary1.01p, binary1.02p, binary1.03p, binary1.04p, binary1.05p, binary1.06p, binary1.07p, binary1.08p, binary1.09p, binary1.10p, binary1.11p, binary1.12p, binary1.13p, binary1.14p, binary1.15p, binary1.16p)
+#0.8974835
+
+save(binary1, binary1.01, binary1.02, binary1.03, binary1.04, binary1.05, binary1.06, binary1.07, binary1.08, binary1.09, binary1.10, binary1.11, binary1.12, binary1.13, binary1.14, binary1.15, binary1.16, file="results/FINAL_split_reg_STEP1.RData")
+
+
+#Drop pc2
+#binary1.10
+
+
+#####################################
+#####################################
+##############STEP 2#################
+#####################################
+#####################################
+
+binary2 <- binary1.10
+
+#Code below identical to binary1.10. Pasted as a redundancy
+#binary2 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+#asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary2$mer
+#Baseline Deviance = 1729.6510
+
+#HouseholdIncome
+binary2.01 <- gamm4(concussion ~ Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary2.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary2.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary2.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Overall
+binary2.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_depress_t
+binary2.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_anxdisord_t
+binary2.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary2.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary2.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary2.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary2.11 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary2.12 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary2.13 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_opposit_t
+binary2.14 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+
+#cbcl_scr_dsm5_conduct_t
+binary2.15 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t +asr_scr_anxdisord_t + asr_scr_somaticpr_t +  pc1 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#HouseholdIncome
+binary2.01$mer
+#Deviance 1738.3125 with change in df = 2
+#LRT test 1738.3125 - 1729.6510 = 8.6615
+binary2.01p <- pchisq(8.6615, df=2, lower.tail=FALSE)
+
+#Race
+binary2.02$mer
+#Deviance 1735.1805 with change in df = 3
+#LRT test 1735.1805 - 1729.6510 = 5.5295
+binary2.02p <- pchisq(5.5295, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary2.03$mer
+#Deviance 1734.3297 with change in df = 1
+#LRT test 1734.3297 - 1729.6510 = 4.6787
+binary2.03p <- pchisq(4.6787, df=1, lower.tail=FALSE)
+
+#Sex
+binary2.04$mer
+#Deviance 1735.4083 with change in df = 1
+#LRT test 1735.4083 - 1729.6510 = 5.7573
+binary2.04p <- pchisq(5.7573, df=1, lower.tail=FALSE)
+
+#Overall
+binary2.05$mer
+#Deviance 1730.7003 with change in df = 1
+#LRT test 1730.7003 - 1729.6510 = 1.0493
+binary2.05p <- pchisq(1.0493, df=1, lower.tail=FALSE)
+
+#asr_scr_depress_t
+binary2.06$mer
+#Deviance 1729.7730 with change in df = 1
+#LRT test 1729.7730 - 1729.6510 = 0.122
+binary2.06p <- pchisq(0.122, df=1, lower.tail=FALSE)
+
+#asr_scr_anxdisord_t
+binary2.07$mer
+#Deviance 1729.6901 with change in df = 1
+#LRT test 1729.6901 - 1729.6510 = 0.0391
+binary2.07p <- pchisq(0.0391, df=1, lower.tail=FALSE)
+
+#asr_scr_somaticpr_t
+binary2.08$mer
+#Deviance 1731.4637 with change in df = 1
+#LRT test 1731.4637 - 1729.6510 = 1.8127
+binary2.08p <- pchisq(1.8127, df=1, lower.tail=FALSE)
+
+#pc1
+binary2.09$mer
+#Deviance 1731.2926 with change in df = 1
+#LRT test 1731.2926 - 1729.6510 = 1.6416
+binary2.09p <- pchisq(1.6416, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary2.10$mer
+#Deviance 1732.1108 with change in df = 1
+#LRT test 1732.1108 - 1729.6510 = 2.4598
+binary2.10p <- pchisq(2.4598, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary2.11$mer
+#Deviance 1731.2307 with change in df = 1
+#LRT test 1731.2307 - 1729.6510 = 1.5797
+binary2.11p <- pchisq(1.5797, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary2.12$mer
+#Deviance 1736.9355 with change in df = 1
+#LRT test 1736.9355 - 1729.6510 = 7.2845
+binary2.12p <- pchisq(7.2845, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary2.13$mer
+#Deviance 1731.790 with change in df = 1
+#LRT test 1731.790 - 1729.6510 = 2.139
+binary2.13p <- pchisq(2.139, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_opposit_t
+binary2.14$mer
+#Deviance 1729.8552 with change in df = 1
+#LRT test 1729.8552 - 1729.6510 = 0.2042
+binary2.14p <- pchisq(0.2042, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_conduct_t
+binary2.15$mer
+#Deviance 1729.7885 with change in df = 1
+#LRT test 1729.7885 - 1729.6510 = 0.1375
+binary2.15p <- pchisq(0.1375, df=1, lower.tail=FALSE)
+
+max(binary2.01p, binary2.02p, binary2.03p, binary2.04p, binary2.05p, binary2.06p, binary2.07p, binary2.08p, binary2.09p, binary2.10p, binary2.11p, binary2.12p, binary2.13p, binary2.14p, binary2.15p)
+#0.8432507
+
+save(binary2, binary2.01, binary2.02, binary2.03, binary2.04, binary2.05, binary2.06, binary2.07, binary2.08, binary2.09, binary2.10, binary2.11, binary2.12, binary2.13, binary2.14, binary2.15, file="results/FINAL_split_reg_STEP2.RData")
+
+
+#Drop asr_scr_anxdisord_t
+#binary2.07
+
+
+#####################################
+#####################################
+##############STEP 3#################
+#####################################
+#####################################
+
+binary3 <- binary2.07
+
+#Code below identical to binary2.07. Pasted as a redundancy
+#binary3 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+#asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+#  cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary3$mer
+#Baseline Deviance = 1729.6901
+
+#HouseholdIncome
+binary3.01 <- gamm4(concussion ~ Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary3.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary3.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary3.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Overall
+binary3.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+                      asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_depress_t
+binary3.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                       asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#asr_scr_somaticpr_t
+binary3.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary3.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary3.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary3.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary3.11 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary3.12 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_opposit_t
+binary3.13 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t  + asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+
+#cbcl_scr_dsm5_conduct_t
+binary3.14 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_depress_t + asr_scr_somaticpr_t +  pc1 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#HouseholdIncome
+binary3.01$mer
+#Deviance 1738.3212 with change in df = 2
+#LRT test 1738.3212 - 1729.6901 = 8.6311
+binary3.01p <- pchisq(8.6311, df=2, lower.tail=FALSE)
+
+#Race
+binary3.02$mer
+#Deviance 1735.2154 with change in df = 3
+#LRT test 1735.2154 - 1729.6901 = 5.5253
+binary3.02p <- pchisq(5.5253, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary3.03$mer
+#Deviance 1734.3489 with change in df = 1
+#LRT test 1734.3489 - 1729.6901 = 4.6588
+binary3.03p <- pchisq(4.6588, df=1, lower.tail=FALSE)
+
+#Sex
+binary3.04$mer
+#Deviance 1735.4498 with change in df = 1
+#LRT test 1735.4498 - 1729.6901 = 5.7597
+binary3.04p <- pchisq(5.7597, df=1, lower.tail=FALSE)
+
+#Overall
+binary3.05$mer
+#Deviance 1730.7431 with change in df = 1
+#LRT test 1730.7431 - 1729.6901 = 1.053
+binary3.05p <- pchisq(1.053, df=1, lower.tail=FALSE)
+
+#asr_scr_depress_t
+binary3.06$mer
+#Deviance 1729.7741 with change in df = 1
+#LRT test 1729.7741 - 1729.6901 = 0.084
+binary3.06p <- pchisq(0.084, df=1, lower.tail=FALSE)
+
+#asr_scr_somaticpr_t
+binary3.07$mer
+#Deviance 1731.5888 with change in df = 1
+#LRT test 1731.5888 - 1729.6901 = 1.8987
+binary3.07p <- pchisq(1.8987, df=1, lower.tail=FALSE)
+
+#pc1
+binary3.08$mer
+#Deviance 1731.3269 with change in df = 1
+#LRT test 1731.3269 - 1729.6901 = 1.6368
+binary3.08p <- pchisq(1.6368, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary3.09$mer
+#Deviance 1732.1295 with change in df = 1
+#LRT test 1732.1295 - 1729.6901 = 2.4394
+binary3.09p <- pchisq(2.4394, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary3.10$mer
+#Deviance 1731.2323 with change in df = 1
+#LRT test 1731.2323 - 1729.6901 = 1.5422
+binary3.10p <- pchisq(1.5422, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary3.11$mer
+#Deviance 1736.9602 with change in df = 1
+#LRT test 1736.9602 - 1729.6901 = 7.2701
+binary3.11p <- pchisq(7.2701, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary3.12$mer
+#Deviance 1731.8263 with change in df = 1
+#LRT test 1731.8263 - 1729.6901 = 2.1362
+binary3.12p <- pchisq(2.1362, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_opposit_t
+binary3.13$mer
+#Deviance 1729.9123 with change in df = 1
+#LRT test 1729.9123 - 1729.6901 = 0.2222
+binary3.13p <- pchisq(0.2222, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_conduct_t
+binary3.14$mer
+#Deviance 1729.8212 with change in df = 1
+#LRT test 1729.8212 - 1729.6901 = 0.1311
+binary3.14p <- pchisq(0.1311, df=1, lower.tail=FALSE)
+
+max(binary3.01p, binary3.02p, binary3.03p, binary3.04p, binary3.05p, binary3.06p, binary3.07p, binary3.08p, binary3.09p, binary3.10p, binary3.11p, binary3.12p, binary3.13p, binary3.14p)
+#0.7719482
+
+save(binary3, binary3.01, binary3.02, binary3.03, binary3.04, binary3.05, binary3.06, binary3.07, binary3.08, binary3.09, binary3.10, binary3.11, binary3.12, binary3.13, binary3.14, file="results/FINAL_split_reg_STEP3.RData")
+
+
+#Drop asr_scr_depress_t
+#binary3.06
+
+
+#####################################
+#####################################
+##############STEP 4#################
+#####################################
+#####################################
+
+binary4 <- binary3.06
+
+#Code below identical to binary3.06. Pasted as a redundancy
+#binary4 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+#asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary4$mer
+#Baseline Deviance = 1729.7741
+
+#HouseholdIncome
+binary4.01 <- gamm4(concussion ~ Race + Ethnicity + Sex + Overall + 
+                       asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary4.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary4.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary4.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Overall
+binary4.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+                       asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary4.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                        pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary4.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                        asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary4.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary4.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                       asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary4.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary4.11 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_opposit_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_opposit_t
+binary4.12 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                        asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_conduct_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+
+#cbcl_scr_dsm5_conduct_t
+binary4.13 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#HouseholdIncome
+binary4.01$mer
+#Deviance 1738.6664 with change in df = 2
+#LRT test 1738.6664 - 1729.7741 = 8.8923
+binary4.01p <- pchisq(8.8923, df=2, lower.tail=FALSE)
+
+#Race
+binary4.02$mer
+#Deviance 1735.2197 with change in df = 3
+#LRT test 1735.2197 - 1729.7741 = 5.4456
+binary4.02p <- pchisq(5.4456, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary4.03$mer
+#Deviance 1734.3647 with change in df = 1
+#LRT test 1734.3647 - 1729.7741 = 4.5906
+binary4.03p <- pchisq(4.5906, df=1, lower.tail=FALSE)
+
+#Sex
+binary4.04$mer
+#Deviance 1735.5642 with change in df = 1
+#LRT test 1735.5642 - 1729.7741 = 5.7901
+binary4.04p <- pchisq(5.7901, df=1, lower.tail=FALSE)
+
+#Overall
+binary4.05$mer
+#Deviance 1730.7911 with change in df = 1
+#LRT test 1730.7911 - 1729.7741 = 1.017
+binary4.05p <- pchisq(1.017, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary4.06$mer
+#Deviance 1731.6813 with change in df = 1
+#LRT test 1731.6813 - 1729.7741 = 1.9072
+binary4.06p <- pchisq(1.9072, df=1, lower.tail=FALSE)
+
+#pc1
+binary4.07$mer
+#Deviance 1731.4052 with change in df = 1
+#LRT test 1731.4052 - 1729.7741 = 1.6311
+binary4.07p <- pchisq(1.6311, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary4.08$mer
+#Deviance 1732.1469 with change in df = 1
+#LRT test 1732.1469 - 1729.7741 = 2.3728
+binary4.08p <- pchisq(2.3728, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary4.09$mer
+#Deviance 1731.3736 with change in df = 1
+#LRT test 1731.3736 - 1729.7741 = 1.5995
+binary4.09p <- pchisq(1.5995, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary4.10$mer
+#Deviance 1737.0404 with change in df = 1
+#LRT test 1737.0404 - 1729.7741 = 7.2663
+binary4.10p <- pchisq(7.2663, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary4.11$mer
+#Deviance 1731.8724 with change in df = 1
+#LRT test 1731.8724 - 1729.7741 = 2.0983
+binary4.11p <- pchisq(2.0983, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_opposit_t
+binary4.12$mer
+#Deviance 1729.9925 with change in df = 1
+#LRT test 1729.9925 - 1729.7741 = 0.2184
+binary4.12p <- pchisq(0.2184, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_conduct_t
+binary4.13$mer
+#Deviance 1729.9014 with change in df = 1
+#LRT test 1729.9014 - 1729.7741 = 0.1273
+binary4.13p <- pchisq(0.1273, df=1, lower.tail=FALSE)
+
+max(binary4.01p, binary4.02p, binary4.03p, binary4.04p, binary4.05p, binary4.06p, binary4.07p, binary4.08p, binary4.09p, binary4.10p, binary4.11p, binary4.12p, binary4.13p)
+#0.7212481
+
+save(binary4, binary4.01, binary4.02, binary4.03, binary4.04, binary4.05, binary4.06, binary4.07, binary4.08, binary4.09, binary4.10, binary4.11, binary4.12, binary4.13, file="results/FINAL_split_reg_STEP4.RData")
+
+
+#Drop cbcl_scr_dsm5_conduct_t
+#binary4.13
+
+
+#####################################
+#####################################
+##############STEP 5#################
+#####################################
+#####################################
+
+binary5 <- binary4.13
+
+#Code below identical to binary4.13. Pasted as a redundancy
+#binary5 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+#asr_scr_somaticpr_t +  pc1 + cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary5$mer
+#Baseline Deviance = 1729.9014
+
+#HouseholdIncome
+binary5.01 <- gamm4(concussion ~ Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary5.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary5.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary5.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Overall
+binary5.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary5.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary5.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary5.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary5.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary5.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t + cbcl_scr_dsm5_opposit_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary5.11 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_opposit_t , random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_opposit_t
+binary5.12 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+
+#HouseholdIncome
+binary5.01$mer
+#Deviance 1738.6664 with change in df = 2
+#LRT test 1738.6664 - 1729.9014 = 8.765
+binary5.01p <- pchisq(8.765, df=2, lower.tail=FALSE)
+
+#Race
+binary5.02$mer
+#Deviance 1735.2495 with change in df = 3
+#LRT test 1735.2495 - 1729.9014 = 5.3481
+binary5.02p <- pchisq(5.3481, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary5.03$mer
+#Deviance 1734.6171 with change in df = 1
+#LRT test 1734.6171 - 1729.9014 = 4.7157
+binary5.03p <- pchisq(4.7157, df=1, lower.tail=FALSE)
+
+#Sex
+binary5.04$mer
+#Deviance 1735.6353 with change in df = 1
+#LRT test 1735.6353 - 1729.9014 = 5.7339
+binary5.04p <- pchisq(5.7339, df=1, lower.tail=FALSE)
+
+#Overall
+binary5.05$mer
+#Deviance 1730.9073 with change in df = 1
+#LRT test 1730.9073 - 1729.9014 = 1.0059
+binary5.05p <- pchisq(1.0059, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary5.06$mer
+#Deviance 1731.888 with change in df = 1
+#LRT test 1731.888 - 1729.9014 = 1.9866
+binary5.06p <- pchisq(1.9866, df=1, lower.tail=FALSE)
+
+#pc1
+binary5.07$mer
+#Deviance 1731.5181 with change in df = 1
+#LRT test 1731.5181 - 1729.9014 = 1.6167
+binary5.07p <- pchisq(1.6167, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary5.08$mer
+#Deviance 1732.3129 with change in df = 1
+#LRT test 1732.3129 - 1729.9014 = 2.4115
+binary5.08p <- pchisq(2.4115, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary5.09$mer
+#Deviance 1731.5563 with change in df = 1
+#LRT test 1731.5563 - 1729.9014 = 1.6549
+binary5.09p <- pchisq(1.6549, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary5.10$mer
+#Deviance 1737.1993 with change in df = 1
+#LRT test 1737.1993 - 1729.9014 = 7.2979
+binary5.10p <- pchisq(7.2979, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary5.11$mer
+#Deviance 1732.280 with change in df = 1
+#LRT test 1732.280 - 1729.9014 = 2.3786
+binary5.11p <- pchisq(2.3786, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_opposit_t
+binary5.12$mer
+#Deviance 1730.5602 with change in df = 1
+#LRT test 1730.5602 - 1729.9014 = 0.6588
+binary5.12p <- pchisq(0.6588, df=1, lower.tail=FALSE)
+
+
+max(binary5.01p, binary5.02p, binary5.03p, binary5.04p, binary5.05p, binary5.06p, binary5.07p, binary5.08p, binary5.09p, binary5.10p, binary5.11p, binary5.12p)
+#0.4169839
+
+save(binary5, binary5.01, binary5.02, binary5.03, binary5.04, binary5.05, binary5.06, binary5.07, binary5.08, binary5.09, binary5.10, binary5.11, binary5.12, file="results/FINAL_split_reg_STEP5.RData")
+
+
+#Drop #cbcl_scr_dsm5_opposit_t
+#binary5.12
+
+
+#####################################
+#####################################
+##############STEP 6#################
+#####################################
+#####################################
+
+binary6 <- binary5.12
+
+#Code below identical to binary5.12. Pasted as a redundancy
+#binary6 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+#asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary6$mer
+#Baseline Deviance = 1730.5602
+
+#HouseholdIncome
+binary6.01 <- gamm4(concussion ~ Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary6.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary6.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary6.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Overall
+binary6.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary6.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary6.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary6.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary6.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary6.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary6.11 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + Overall + 
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t
+                     , random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#HouseholdIncome
+binary6.01$mer
+#Deviance 1739.2192 with change in df = 2
+#LRT test 1739.2192 - 1730.5602 = 8.659
+binary6.01p <- pchisq(8.659, df=2, lower.tail=FALSE)
+
+#Race
+binary6.02$mer
+#Deviance 1736.0253 with change in df = 3
+#LRT test 1736.0253 - 1730.5602 = 5.4651
+binary6.02p <- pchisq(5.4651, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary6.03$mer
+#Deviance 1735.1895 with change in df = 1
+#LRT test 1735.1895 - 1730.5602 = 4.6293
+binary6.03p <- pchisq(4.6293, df=1, lower.tail=FALSE)
+
+#Sex
+binary6.04$mer
+#Deviance 1736.4690 with change in df = 1
+#LRT test 1736.4690 - 1730.5602 = 5.9088
+binary6.04p <- pchisq(5.9088, df=1, lower.tail=FALSE)
+
+#Overall
+binary6.05$mer
+#Deviance 1731.6911 with change in df = 1
+#LRT test 1731.6911 - 1730.5602 = 1.1309
+binary6.05p <- pchisq(1.1309, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary6.06$mer
+#Deviance 1732.5531 with change in df = 1
+#LRT test 1732.5531 - 1730.5602 = 1.9929
+binary6.06p <- pchisq(1.9929, df=1, lower.tail=FALSE)
+
+#pc1
+binary6.07$mer
+#Deviance 1732.178 with change in df = 1
+#LRT test 1732.178 - 1730.5602 = 1.6178
+binary6.07p <- pchisq(1.6178, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary6.08$mer
+#Deviance 1733.7577 with change in df = 1
+#LRT test 1733.7577 - 1730.5602 = 3.1975
+binary6.08p <- pchisq(3.1975, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary6.09$mer
+#Deviance 1732.1948 with change in df = 1
+#LRT test 1732.1948 - 1730.5602 = 1.6346
+binary6.09p <- pchisq(1.6346, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary6.10$mer
+#Deviance 1737.9933 with change in df = 1
+#LRT test 1737.9933 - 1730.5602 = 7.4331
+binary6.10p <- pchisq(7.4331, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary6.11$mer
+#Deviance 1734.9006 with change in df = 1
+#LRT test 1734.9006 - 1730.5602 = 4.3404
+binary6.11p <- pchisq(4.3404, df=1, lower.tail=FALSE)
+
+
+
+max(binary6.01p, binary6.02p, binary6.03p, binary6.04p, binary6.05p, binary6.06p, binary6.07p, binary6.08p, binary6.09p, binary6.10p, binary6.11p)
+#0.2875834
+
+save(binary6, binary6.01, binary6.02, binary6.03, binary6.04, binary6.05, binary6.06, binary6.07, binary6.08, binary6.09, binary6.10, binary6.11, file="results/FINAL_split_reg_STEP6.RData")
+
+
+#Drop Overall
+#binary6.05
+
+
+#####################################
+#####################################
+##############STEP 7#################
+#####################################
+#####################################
+
+binary7 <- binary6.05
+
+#Code below identical to binary6.05. Pasted as a redundancy
+#binary7 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex + 
+#asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary7$mer
+#Baseline Deviance = 1731.6911
+
+#HouseholdIncome
+binary7.01 <- gamm4(concussion ~ Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary7.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary7.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary7.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary7.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary7.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary7.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_anxdisord_t
+binary7.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary7.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary7.10 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_anxdisord_t + cbcl_scr_dsm5_somaticpr_t
+                    , random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#HouseholdIncome
+binary7.01$mer
+#Deviance 1740.0782 with change in df = 2
+#LRT test 1740.0782 - 1731.6911 = 8.3871
+binary7.01p <- pchisq(8.3871, df=2, lower.tail=FALSE)
+
+#Race
+binary7.02$mer
+#Deviance 1736.9293 with change in df = 3
+#LRT test 1736.9293 - 1731.6911 = 5.2382
+binary7.02p <- pchisq(5.2382, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary7.03$mer
+#Deviance 1736.3765 with change in df = 1
+#LRT test 1736.3765 - 1731.6911 = 4.6854
+binary7.03p <- pchisq(4.6854, df=1, lower.tail=FALSE)
+
+#Sex
+binary7.04$mer
+#Deviance 1737.4245 with change in df = 1
+#LRT test 1737.4245 - 1731.6911 = 5.7334
+binary7.04p <- pchisq(5.7334, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary7.05$mer
+#Deviance 1733.9670 with change in df = 1
+#LRT test 1733.9670 - 1731.6911 = 2.2759
+binary7.05p <- pchisq(2.2759, df=1, lower.tail=FALSE)
+
+#pc1
+binary7.06$mer
+#Deviance 1733.3157 with change in df = 1
+#LRT test 1733.3157 - 1731.6911 = 1.6246
+binary7.06p <- pchisq(1.6246, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary7.07$mer
+#Deviance 1736.5391 with change in df = 1
+#LRT test 1736.5391 - 1731.6911 = 4.848
+binary7.07p <- pchisq(4.848, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_anxdisord_t
+binary7.08$mer
+#Deviance 1732.9721 with change in df = 1
+#LRT test 1732.9721 - 1731.6911 = 1.281
+binary7.08p <- pchisq(1.281, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary7.09$mer
+#Deviance 1739.6852 with change in df = 1
+#LRT test 1739.6852 - 1731.6911 = 7.9441
+binary7.09p <- pchisq(7.9441, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary7.10$mer
+#Deviance 1736.726 with change in df = 1
+#LRT test 1736.726 - 1731.6911 = 5.0349
+binary7.10p <- pchisq(5.0349, df=1, lower.tail=FALSE)
+
+
+
+max(binary7.01p, binary7.02p, binary7.03p, binary7.04p, binary7.05p, binary7.06p, binary7.07p, binary7.08p, binary7.09p, binary7.10p)
+#0.2577132
+
+save(binary7, binary7.01, binary7.02, binary7.03, binary7.04, binary7.05, binary7.06, binary7.07, binary7.08, binary7.09, binary7.10, file="results/FINAL_split_reg_STEP7.RData")
+
+
+#Drop cbcl_scr_dsm5_anxdisord_t
+#binary7.08
+
+
+
+#####################################
+#####################################
+##############STEP 8#################
+#####################################
+#####################################
+
+binary8 <- binary7.08
+
+#Code below identical to binary7.08. Pasted as a redundancy
+#binary8 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+#asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary8$mer
+#Baseline Deviance = 1732.9721
+
+#HouseholdIncome
+binary8.01 <- gamm4(concussion ~ Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +   cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary8.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary8.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary8.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary8.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      pc1 +    cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#pc1
+binary8.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary8.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +     cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary8.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t +  
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary8.09 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +  pc1 +    cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t
+                    , random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#HouseholdIncome
+binary8.01$mer
+#Deviance 1741.342 with change in df = 2
+#LRT test 1741.342 - 1732.9721 = 8.3699
+binary8.01p <- pchisq(8.3699, df=2, lower.tail=FALSE)
+
+#Race
+binary8.02$mer
+#Deviance 1738.0233 with change in df = 3
+#LRT test 1738.0233 - 1732.9721 = 5.0512
+binary8.02p <- pchisq(5.0512, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary8.03$mer
+#Deviance 1737.9883 with change in df = 1
+#LRT test 1737.9883 - 1732.9721 = 5.0162
+binary8.03p <- pchisq(5.0162, df=1, lower.tail=FALSE)
+
+#Sex
+binary8.04$mer
+#Deviance 1738.5577 with change in df = 1
+#LRT test 1738.5577 - 1732.9721 = 5.5856
+binary8.04p <- pchisq(5.5856, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary8.05$mer
+#Deviance 1735.0438 with change in df = 1
+#LRT test 1735.0438 - 1732.9721 = 2.0717
+binary8.05p <- pchisq(2.0717, df=1, lower.tail=FALSE)
+
+#pc1
+binary8.06$mer
+#Deviance 1734.5952 with change in df = 1
+#LRT test 1734.5952 - 1732.9721 = 1.6231
+binary8.06p <- pchisq(1.6231, df=1, lower.tail=FALSE)
+
+#cbcl_scr_dsm5_depress_t
+binary8.07$mer
+#Deviance 1736.5428 with change in df = 1
+#LRT test 1736.5428 - 1732.9721 = 3.5707
+binary8.07p <- pchisq(3.5707, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary8.08$mer
+#Deviance 1740.1112 with change in df = 1
+#LRT test 1740.1112 - 1732.9721 = 7.1391
+binary8.08p <- pchisq(7.1391, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary8.09$mer
+#Deviance 1737.2686 with change in df = 1
+#LRT test 1737.2686 - 1732.9721 = 4.2965
+binary8.09p <- pchisq(4.2965, df=1, lower.tail=FALSE)
+
+
+
+max(binary8.01p, binary8.02p, binary8.03p, binary8.04p, binary8.05p, binary8.06p, binary8.07p, binary8.08p, binary8.09p)
+#0.2026601
+
+save(binary8, binary8.01, binary8.02, binary8.03, binary8.04, binary8.05, binary8.06, binary8.07, binary8.08, binary8.09, file="results/FINAL_split_reg_STEP8.RData")
+
+
+#Drop pc1
+#binary8.06
+
+
+#####################################
+#####################################
+##############STEP 9#################
+#####################################
+#####################################
+
+binary9 <- binary8.06
+
+#Code below identical to binary8.06. Pasted as a redundancy
+#binary9 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+#asr_scr_somaticpr_t +    cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary9$mer
+#Baseline Deviance = 1734.5952
+
+#HouseholdIncome
+binary9.01 <- gamm4(concussion ~ Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +     cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+#Race
+binary9.02 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Ethnicity
+binary9.03 <- gamm4(concussion ~ HouseholdIncome + Race + Sex +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary9.04 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary9.05 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                          cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary9.06 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +       cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary9.07 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary9.08 <- gamm4(concussion ~ HouseholdIncome + Race + Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +     cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t
+                    , random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#HouseholdIncome
+binary9.01$mer
+#Deviance 1743.0867 with change in df = 2
+#LRT test 1743.0867 - 1734.5952 = 8.4915
+binary9.01p <- pchisq(8.4915, df=2, lower.tail=FALSE)
+
+#Race
+binary9.02$mer
+#Deviance 1739.7042 with change in df = 3
+#LRT test 1739.7042 - 1734.5952 = 5.109
+binary9.02p <- pchisq(5.109, df=3, lower.tail=FALSE)
+
+#Ethnicity
+binary9.03$mer
+#Deviance 1739.5301 with change in df = 1
+#LRT test 1739.5301 - 1734.5952 = 4.9349
+binary9.03p <- pchisq(4.9349, df=1, lower.tail=FALSE)
+
+#Sex
+binary9.04$mer
+#Deviance 1740.2850 with change in df = 1
+#LRT test 1740.2850 - 1734.5952 = 5.6898
+binary9.04p <- pchisq(5.6898, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary9.05$mer
+#Deviance 1736.6116 with change in df = 1
+#LRT test 1736.6116 - 1734.5952 = 2.0164
+binary9.05p <- pchisq(2.0164, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_depress_t
+binary9.06$mer
+#Deviance 1738.1238 with change in df = 1
+#LRT test 1738.1238 - 1734.5952 = 3.5286
+binary9.06p <- pchisq(3.5286, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary9.07$mer
+#Deviance 1741.6384 with change in df = 1
+#LRT test 1741.6384 - 1734.5952 = 7.0432
+binary9.07p <- pchisq(7.0432, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary9.08$mer
+#Deviance 1738.9905 with change in df = 1
+#LRT test 1738.9905 - 1734.5952 = 4.3952
+binary9.08p <- pchisq(4.3952, df=1, lower.tail=FALSE)
+
+
+
+max(binary9.01p, binary9.02p, binary9.03p, binary9.04p, binary9.05p, binary9.06p, binary9.07p, binary9.08p)
+#0.1639874
+
+save(binary9, binary9.01, binary9.02, binary9.03, binary9.04, binary9.05, binary9.06, binary9.07, binary9.08, file="results/FINAL_split_reg_STEP9.RData")
+
+
+#Drop Race
+#binary9.02
+
+######################################
+######################################
+##############STEP 10#################
+######################################
+######################################
+
+binary10 <- binary9.02
+
+#Code below identical to binary9.02. Pasted as a redundancy
+#binary10 <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex +  
+#asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+ # cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+#family=binomial, data=train)
+
+
+binary10$mer
+#Baseline Deviance = 1739.7042
+
+#HouseholdIncome
+binary10.01 <- gamm4(concussion ~  Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +     cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#Ethnicity
+binary10.02 <- gamm4(concussion ~ HouseholdIncome +  Sex +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#Sex
+binary10.03 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+#asr_scr_somaticpr_t
+binary10.04 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binary10.05 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +       cbcl_scr_dsm5_somaticpr_t + 
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binary10.06 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  
+                      cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binary10.07 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                      asr_scr_somaticpr_t +     cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t
+                    , random = ~(1|site_num), 
+                    family=binomial, data=train)
+
+
+
+#HouseholdIncome
+binary10.01$mer
+#Deviance 1754.602 with change in df = 2
+#LRT test 1754.602 - 1739.7042 = 14.8978
+binary10.01p <- pchisq(14.8978, df=2, lower.tail=FALSE)
+
+
+#Ethnicity
+binary10.02$mer
+#Deviance 1743.4115 with change in df = 1
+#LRT test 1743.4115 - 1739.7042 = 3.703
+binary10.02p <- pchisq(3.703, df=1, lower.tail=FALSE)
+
+#Sex
+binary10.03$mer
+#Deviance 1745.3769 with change in df = 1
+#LRT test 1745.3769 - 1739.7042 = 5.6727
+binary10.03p <- pchisq(5.6727, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binary10.04$mer
+#Deviance 1741.7477 with change in df = 1
+#LRT test 1741.7477 - 1739.7042 = 2.0435
+binary10.04p <- pchisq(2.0435, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_depress_t
+binary10.05$mer
+#Deviance 1743.4859 with change in df = 1
+#LRT test 1743.4859 - 1739.7042 = 3.7817
+binary10.05p <- pchisq(3.7817, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binary10.06$mer
+#Deviance 1747.1384 with change in df = 1
+#LRT test 1747.1384 - 1739.7042 = 7.4342
+binary10.06p <- pchisq(7.4342, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binary10.07$mer
+#Deviance 1743.8849 with change in df = 1
+#LRT test 1743.8849 - 1739.7042 = 4.1807
+binary10.07p <- pchisq(4.1807, df=1, lower.tail=FALSE)
+
+
+
+max(binary10.01p, binary10.02p, binary10.03p, binary10.04p, binary10.05p, binary10.06p, binary10.07p)
+#0.1528576
+
+save(binary10, binary10.01, binary10.02, binary10.03, binary10.04, binary10.05, binary10.06, binary10.07, file="results/FINAL_split_reg_STEP10.RData")
+
+
+#Threshold met. Regression is complete.
+
+
+
+#############################################
+###Apply trained regression on test set######
+#############################################
+
+
+
+TrainReg <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex +  
+                    asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                    cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                  family=binomial, data=train)
+
+summary(TrainReg$mer)
+summary(TrainReg$gam)
+anova(TrainReg$mer)
+anova(TrainReg$gam)
+
+
+TestReg <- gamm4(concussion ~ HouseholdIncome + Ethnicity + Sex +  
+                   asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                   cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                 family=binomial, data=test)
+
+summary(TestReg$mer)
+summary(TestReg$gam)
+anova(TestReg$mer)
+anova(TestReg$gam)
+
+#Evaluate LRT p-values for Test set
+
+TestReg$mer
+#Baseline Deviance = 1849.5482
+
+
+#HouseholdIncome
+binarytest.01 <- gamm4(concussion ~  Ethnicity + Sex +  
+                       asr_scr_somaticpr_t +     cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                       cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+
+#Ethnicity
+binarytest.02 <- gamm4(concussion ~ HouseholdIncome +  Sex +  
+                       asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                       cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+#Sex
+binarytest.03 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity +  
+                       asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                       cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+#asr_scr_somaticpr_t
+binarytest.04 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                       cbcl_scr_dsm5_depress_t +  cbcl_scr_dsm5_somaticpr_t + 
+                       cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+
+#cbcl_scr_dsm5_depress_t
+binarytest.05 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                       asr_scr_somaticpr_t +       cbcl_scr_dsm5_somaticpr_t + 
+                       cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+
+#cbcl_scr_dsm5_somaticpr_t
+binarytest.06 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                       asr_scr_somaticpr_t +      cbcl_scr_dsm5_depress_t +  
+                       cbcl_scr_dsm5_adhd_t, random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+
+#cbcl_scr_dsm5_adhd_t
+binarytest.07 <- gamm4(concussion ~ HouseholdIncome +  Ethnicity + Sex +  
+                       asr_scr_somaticpr_t +     cbcl_scr_dsm5_depress_t + cbcl_scr_dsm5_somaticpr_t
+                     , random = ~(1|site_num), 
+                     family=binomial, data=test)
+
+
+
+#HouseholdIncome
+binarytest.01$mer
+#Deviance 1860.1103 with change in df = 2
+#LRT test 1860.1103 - 1849.5482 = 10.5621
+binarytest.01p <- pchisq(10.5621, df=2, lower.tail=FALSE)
+
+
+#Ethnicity
+binarytest.02$mer
+#Deviance 1849.5726 with change in df = 1
+#LRT test 1849.5726 - 1849.5482 = 0.0244
+binarytest.02p <- pchisq(0.0244, df=1, lower.tail=FALSE)
+
+#Sex
+binarytest.03$mer
+#Deviance 1855.132 with change in df = 1
+#LRT test 1855.132 - 1849.5482 = 5.5838
+binarytest.03p <- pchisq(5.5838, df=1, lower.tail=FALSE)
+
+
+#asr_scr_somaticpr_t
+binarytest.04$mer
+#Deviance 1851.3509 with change in df = 1
+#LRT test 1851.3509 - 1849.5482 = 1.8027
+binarytest.04p <- pchisq(1.8027, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_depress_t
+binarytest.05$mer
+#Deviance 1850.9111 with change in df = 1
+#LRT test 1850.9111 - 1849.5482 = 1.3629
+binarytest.05p <- pchisq(1.3629, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_somatic_t
+binarytest.06$mer
+#Deviance 1858.1742 with change in df = 1
+#LRT test 1858.1742 - 1849.5482 = 8.626
+binarytest.06p <- pchisq(8.626, df=1, lower.tail=FALSE)
+
+
+#cbcl_scr_dsm5_adhd_t
+binarytest.07$mer
+#Deviance 1856.3087 with change in df = 1
+#LRT test 1856.3087 - 1849.5482 = 6.7605
+binarytest.07p <- pchisq(6.7605, df=1, lower.tail=FALSE)
+
+
+
+max(binarytest.01p, binarytest.02p, binarytest.03p, binarytest.04p, binarytest.05p, binarytest.06p, binarytest.07p)
+#0.8758714
+
+save(binarytest, binarytest.01, binarytest.02, binarytest.03, binarytest.04, binarytest.05, binarytest.06, binarytest.07, file="results/FINAL_split_reg_TEST.RData")
+
+
+binarytest.01p #HouseholdIncome
+#0.005087087
+binarytest.02p #Ethnicity
+#0.8758714
+binarytest.03p #Sex
+#0.01812735
+binarytest.04p #asr_scr_somaticpr_t
+#0.1793864
+binarytest.05p #cbcl_scr_dsm5_depress_t
+#0.2430355
+binarytest.06p #cbcl_scr_dsm5_somatic_t
+#0.003313985
+binarytest.07p #cbcl_scr_dsm5_adhd_t
+#0.009319764
+
+
+save(TestReg, binarytest.01, binarytest.02, binarytest.03, binarytest.04, binarytest.05, binarytest.06, binarytest.07, file="results/split_reg_Test.RData")
