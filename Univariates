@@ -1,0 +1,203 @@
+#The following R code uses the merged and imputed .csv file created using the Datagrab and Imputation Syntax
+
+#Aims 1 and 3 listed below are related to a series of univariate comparisons that were run in SPSS. Syntax for both analyses
+#are noted in a separate file titles "SPSS Univariate Comparisons"
+
+library(stringr)
+library(lattice)
+library(dplyr)
+library(tidyverse)
+library(data.table)
+library(psych)
+library(rio)
+library(foreign)
+
+setwd("~/...")
+
+tbi <- read.csv("ABCD_mTBI_Dataset_Final_2.csv", header=TRUE)
+
+tbi$conc1 = 0
+tbi$conc1[(tbi$tbi_1 == 1 & tbi$tbi_1b == 1) | (tbi$tbi_1 == 1 & tbi$tbi_1c == 1)] <- 1
+tbi$conc1[(tbi$tbi_1 == 1 & tbi$tbi_1b == 2)] <- 2
+tbi$conc1[(tbi$tbi_1 == 1 & tbi$tbi_1b == 3)] <- 3
+
+
+table(tbi$conc1)
+#   0      1     2     3 
+#11379   272     2     2 
+
+tbi$conc2 = 0
+tbi$conc2[(tbi$tbi_2 == 1 & tbi$tbi_2b == 1) | (tbi$tbi_2 == 1 & tbi$tbi_2c == 1)] <- 1
+tbi$conc2[(tbi$tbi_2 == 1 & tbi$tbi_2b == 2)] <- 2
+tbi$conc2[(tbi$tbi_2 == 1 & tbi$tbi_2b == 3)] <- 3
+
+table(tbi$conc2)
+#0     1 
+#11628    27 
+
+tbi$conc3 = 0
+tbi$conc3[(tbi$tbi_3 == 1 & tbi$tbi_3b == 1) | (tbi$tbi_3 == 1 & tbi$tbi_3c == 1)] <- 1
+tbi$conc3[(tbi$tbi_3 == 1 & tbi$tbi_3b == 2)] <- 2
+tbi$conc3[(tbi$tbi_3 == 1 & tbi$tbi_3b == 3)] <- 3
+
+table(tbi$conc3)
+#0         1     2     3 
+#11398   255     1     1 
+
+tbi$conc4 = 0
+tbi$conc4[(tbi$tbi_4 == 1 & tbi$tbi_4b == 1) | (tbi$tbi_4 == 1 & tbi$tbi_4c == 1)] <- 1
+tbi$conc4[(tbi$tbi_4 == 1 & tbi$tbi_4b == 2)] <- 2
+tbi$conc4[(tbi$tbi_4 == 1 & tbi$tbi_4b == 3)] <- 3
+
+table(tbi$conc4)
+#0         1 
+#11645    10 
+
+tbi$conc5 = 0
+tbi$conc5[(tbi$tbi_5 == 1 & tbi$tbi_5b == 1) | (tbi$tbi_5 == 1 & tbi$tbi_5c == 1)] <- 1
+tbi$conc5[(tbi$tbi_5 == 1 & tbi$tbi_5b == 2)] <- 2
+tbi$conc5[(tbi$tbi_5 == 1 & tbi$tbi_5b == 3)] <- 3
+
+table(tbi$conc5)
+#    0 
+#11655 
+
+tbi$conc6 = 0
+tbi$conc6[(tbi$tbi_6o == 1 & tbi$tbi_6q == 1) & (tbi$tbi_6p-tbi$tbi_6r == 0)] <- 1
+tbi$conc6[(tbi$tbi_6o == 1 & tbi$tbi_6q > 1) | (tbi$tbi_6o == 1 & tbi$tbi_6r > 0)] <- 2
+
+table(tbi$conc6)
+#0         2 
+#11650     5
+
+tbi$conc7=0
+tbi$conc7[(tbi$tbi_7a == 1 & tbi$tbi_7c1 == 1) | (tbi$tbi_7c1 == 1 & tbi$tbi_7c2 == 1)] <- 1
+tbi$conc7[(tbi$tbi_7a == 1 & tbi$tbi_7c1 == 2)] <- 2
+tbi$conc7[(tbi$tbi_7a == 1 & tbi$tbi_7c1 == 3)] <- 3
+
+table(tbi$conc7)
+#    0     1     2     3 
+#11651     2     1     1 
+
+tbi$conc7a=0
+tbi$conc7a[(tbi$tbi_7g == 1 & tbi$tbi_7i == 1)] <- 1
+
+table(tbi$conc7a)
+#    0     1 
+#11653     2 
+
+tbi$tbiconc8=0
+tbi$conc8[(tbi$tbi_8g == 1 & tbi$tbi_8i > 0)] <- 1
+
+table(tbi$conc8)
+#0
+
+tbi$concussion = 0
+tbi$concussion[tbi$conc1 == 1 | tbi$conc2 == 1 | tbi$conc3 == 1 | tbi$conc4 == 1 | tbi$conc5 == 1 | tbi$conc6 == 1 | tbi$conc7 == 1 | tbi$conc7a == 1 | tbi$conc8 == 1] <- 1
+tbi$concussion[tbi$conc1 > 1 | tbi$conc2 > 1 | tbi$conc3 > 1 | tbi$conc4 > 1 | tbi$conc5 > 1 | tbi$conc6 > 1 | tbi$conc7 > 1 | tbi$conc7a > 1 | tbi$conc8 > 1] <- 2
+
+table(tbi$concussion)
+
+tbi$concussion <- factor(tbi$concussion,
+                         levels = c(0,1,2),
+                         labels = c("None", "Concussion", "Moderate To Severe"))
+
+################################
+################################
+## Rename Some Core Variables ##
+################################
+################################
+
+names(tbi)[which(names(tbi)=="demo_brthdat_v2")] = "Age"; 
+names(tbi)[which(names(tbi)=="race.ethnicity.4level")] = "Race"
+names(tbi)[which(names(tbi)=="demo_comb_income_v2")] = "HouseholdIncome"
+names(tbi)[which(names(tbi)=="site_id_l")] = "Site"
+names(tbi)[which(names(tbi)=="rel_family_id")] = "Relationship"
+
+names(tbi)[which(names(tbi)=="nihtbx_picvocab_agecorrected")] = "PicVocab"
+names(tbi)[which(names(tbi)=="nihtbx_flanker_agecorrected")] = "Flanker"
+names(tbi)[which(names(tbi)=="nihtbx_list_agecorrected")] = "List"
+names(tbi)[which(names(tbi)=="nihtbx_cardsort_agecorrected")] = "CardSort"
+names(tbi)[which(names(tbi)=="nihtbx_pattern_agecorrected")] = "Pattern"
+names(tbi)[which(names(tbi)=="nihtbx_picture_agecorrected")] = "Picture"
+names(tbi)[which(names(tbi)=="nihtbx_reading_agecorrected")] = "Reading"
+
+names(tbi)[which(names(tbi)=="tbi_ss_ntbiloc")] = "countLoc"
+names(tbi)[which(names(tbi)=="tbi_ss_ntbiloc30")] = "countLoc30"
+names(tbi)[which(names(tbi)=="tbi_ss_nmrpi")] = "repeated"
+names(tbi)[which(names(tbi)=="tbi_ss_agefirst")] = "agefirst"
+names(tbi)[which(names(tbi)=="tbi_ss_before15")] = "before15"
+names(tbi)[which(names(tbi)=="tbi_ss_worst_overall")] = "worst"
+
+
+###################################################
+###################################################
+#######Inspect Variables by Concussion Group#######
+###################################################
+###################################################
+
+contVars <- c(2,4,5,8,14,15,16,17,18,19,20,21,22,23,24,25,26,27, 30, 31, 32)
+catVars <- c(2,6,7,9,10,11,12,13)
+tbiVars <- c(71,73,75,77,79,80)
+filter <- c(2,91)
+
+cont <- tbi[contVars]
+cat <- tbi[catVars]
+tbivars <- tbi[tbiVars]
+filter <- tbi[filter]
+
+
+head(cont)
+head(cat)
+head(tbivars)
+head(filter)
+
+cont1 <- data.frame(filter, cont)
+cat1 <- data.frame(filter, cat)
+
+
+
+contsummary <- describeBy(cont1, group=cont1$concussion)
+contsummary
+
+catsum <- by(cat1, cat1$concussion, summary)
+catsum
+
+
+capture.output(catsum, file="results/Grouped_Categorical_Summaries.txt")
+capture.output(contsummary, file="results/Grouped_Continuous_Summaries.txt")
+
+
+#Export to SPSS for demographic comparisons related to Aim 1
+
+data <- merge(cont, cat, by="subjectkey", all=TRUE)
+data <- merge(data, filter, by="subjectkey", all=TRUE)
+
+write.foreign(data,"SPSS/aim1.txt","SPSS/aim1.sps",package="SPSS")
+
+
+################################
+################################
+####Age-based Analysis##########
+################################
+################################
+
+tbi2 <- subset(tbi, concussion == "Concussion")
+
+tbi2$agefirst <- with(tbi2, pmin(tbi_1d, tbi_2d, tbi_3d, tbi_4d, tbi_5d, tbi_6s, tbi_7e, tbi_7k, na.rm=TRUE))
+table(tbi2$agefirst)
+#0  0.3  0.5 0.75    1  1.5    2    3    4    5    6    7    8    9   10 
+#6    1    3    1   20    3   40   33   33   40   34   58   81   48   35 
+
+tbi2$agefilter = 0
+tbi2$agefilter[(tbi2$agefirst >= 5)] <- 1
+tbi2$agefilter <- factor(tbi2$agefilter,
+                         levels = c(0,1),
+                         labels = c("<5", ">=5"))
+
+table(tbi2$agefilter)
+
+#Export to SPSS for demographic comparisons related to Aim 3
+
+
+write.foreign(tbi2,"SPSS/aim3.txt","SPSS/aim3.sps",package="SPSS")
