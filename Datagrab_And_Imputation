@@ -1,0 +1,608 @@
+
+#The follow R code pulls from ABCD Release 2.0.1 CSV files are identical to .txt files from download
+#These raw data files were opened, the 2nd row of headers were deleted, and they were saved as .csv files.
+
+library(stringr)
+library(lattice)
+library(mice)
+
+
+setwd("~/...")
+
+#Demographics
+
+Dems <- read.csv("pdem02.csv", header = TRUE)
+
+myvars <- c("subjectkey",
+            "eventname",
+            "gender",
+            "demo_brthdat_v2",
+            "demo_race_a_p___10",
+            "demo_race_a_p___11",
+            "demo_race_a_p___12",
+            "demo_race_a_p___13",
+            "demo_race_a_p___14",
+            "demo_race_a_p___15",
+            "demo_race_a_p___16",
+            "demo_race_a_p___17",
+            "demo_race_a_p___18",
+            "demo_race_a_p___19",
+            "demo_race_a_p___20",
+            "demo_race_a_p___21",
+            "demo_race_a_p___22",
+            "demo_race_a_p___23",
+            "demo_race_a_p___24",
+            "demo_race_a_p___25",
+            "demo_ethn_v2",
+            "demo_prnt_age_v2",
+            "demo_prnt_empl_time",
+            "demo_prnt_income_v2",
+            "demo_prnt_prtnr_v2",
+            "demo_prnt_prtnr_bio",
+            "demo_prtnr_empl_v2",
+            "demo_prtnr_empl_time",
+            "demo_prtnr_income_v2",
+            "demo_comb_income_v2",
+            "demo_roster_v2",
+            "demo_child_time_v2",
+            "demo_child_time2_v2",
+            "demo_prim")
+
+Dems <- Dems[myvars]
+
+#Subset to baseline assessments only 
+Dems <- subset(Dems, eventname == "baseline_year_1_arm_1")
+
+#Replace numeric NA values with NA
+Dems$demo_ethn_v2[Dems$demo_ethn_v2>776] <- NA
+Dems$demo_comb_income_v2[Dems$demo_comb_income_v2>776] <- NA
+Dems$demo_prnt_prtnr_v2[Dems$demo_prnt_prtnr_v2>776] <- NA
+Dems$demo_prnt_income_v2[Dems$demo_prnt_income_v2>776] <- NA
+Dems$demo_child_time_v2[Dems$demo_child_time_v2>776] <- NA
+
+#Verify regular data values
+table(Dems$demo_ethn_v2)
+table(Dems$demo_comb_income_v2)
+table(Dems$demo_prnt_prtnr_v2)
+table(Dems$demo_prnt_income_v2)
+table(Dems$demo_child_time_v2)
+
+
+#Construct 7-level race variable 
+#https://github.com/ABCD-STUDY/analysis-nda/blob/master/notebooks/derived/core_demographic.md
+
+Dems$demo_race_white= (Dems$demo_race_a_p___10 == 1)*1
+Dems$demo_race_black= (Dems$demo_race_a_p___11 == 1)*1
+Dems$demo_race_asian = 0
+Dems$demo_race_asian[Dems$demo_race_a_p___18 == 1 | Dems$demo_race_a_p___19 == 1 | 
+                       Dems$demo_race_a_p___20 == 1 | Dems$demo_race_a_p___21 == 1 | 
+                       Dems$demo_race_a_p___22 == 1 | Dems$demo_race_a_p___23 == 1 |
+                       Dems$demo_race_a_p___24==1] = 1
+Dems$demo_race_aian = 0
+Dems$demo_race_aian[Dems$demo_race_a_p___12 == 1 | Dems$demo_race_a_p___13 == 1] = 1
+Dems$demo_race_nhpi = 0
+Dems$demo_race_nhpi[Dems$demo_race_a_p___14 == 1 | Dems$demo_race_a_p___15 == 1 | 
+                      Dems$demo_race_a_p___16 == 1 | Dems$demo_race_a_p___17 == 1] = 1
+Dems$demo_race_other = 0
+Dems$demo_race_other[Dems$demo_race_a_p___25 == 1] = 1
+Dems$demo_race_mixed = Dems$demo_race_white + Dems$demo_race_black + Dems$demo_race_asian + 
+  Dems$demo_race_aian + Dems$demo_race_nhpi + Dems$demo_race_other
+
+Dems$demo_race_mixed[ Dems$demo_race_mixed <= 1] =  0
+Dems$demo_race_mixed[ Dems$demo_race_mixed > 1] =  1
+
+Dems$race.eth.7level = NA
+Dems$race.eth.7level[ Dems$demo_race_white == 1] = 1
+Dems$race.eth.7level[ Dems$demo_race_black == 1] = 2
+Dems$race.eth.7level[ Dems$demo_race_asian == 1] = 3
+Dems$race.eth.7level[ Dems$demo_race_aian == 1]  = 4
+Dems$race.eth.7level[ Dems$demo_race_nhpi == 1]  = 5
+Dems$race.eth.7level[ Dems$demo_race_other == 1] = 6
+Dems$race.eth.7level[ Dems$demo_race_mixed == 1] = 7
+
+
+
+
+Dems$Ethnicity=NA;
+Dems$Ethnicity[Dems$demo_ethn_v2 == 1] =1
+Dems$Ethnicity[Dems$demo_ethn_v2 == 2] =0
+
+Dems$race.eth.7level <- factor(Dems$race.eth.7level,
+                               levels = c(1,2,3,4,5,6,7),
+                               labels = c("White", "Black", "Asian", "AIAN", "NHPI", "Other", "Mixed") )
+
+#Alternate 4-level factor
+Dems$race.ethnicity.4level = Dems$race.eth.7level
+Dems$race.ethnicity.4level[!(Dems$race.eth.7level=="White" | Dems$race.eth.7level=="Black" |
+                               Dems$race.eth.7level=="Asian")] = "Other"
+Dems$race.ethnicity.4level = droplevels(Dems$race.ethnicity.4level)
+
+#Rename gender variable to accurately represent sex at birth
+Dems$Sex[Dems$gender=="M"] <- 0
+Dems$Sex[Dems$gender=="F"] <- 1
+
+Dems$Sex <- factor(Dems$Sex,
+                   levels = c(0,1),
+                   labels = c("Male", "Female"))
+
+Dems <- subset(Dems, select = -c(gender))
+
+#Recode family income
+Dems$demo_comb_income_v2[Dems$demo_comb_income_v2<6]=1
+Dems$demo_comb_income_v2[Dems$demo_comb_income_v2>=6 & Dems$demo_comb_income_v2<9]=2
+Dems$demo_comb_income_v2[Dems$demo_comb_income_v2>=9]=3
+
+Dems$demo_comb_income_v2 <- factor(Dems$demo_comb_income_v2,
+                                   levels = c(1,2,3),
+                                   labels = c("<$35,000", "35,000-99,999", ">100,000"))
+
+summary(Dems$demo_comb_income_v2)
+
+#Drop constructional or redundant variables to assist with imputation
+Dems <- subset(Dems, select = c(subjectkey, eventname, demo_brthdat_v2, demo_prnt_age_v2, demo_prnt_empl_time, demo_prnt_income_v2, demo_prnt_prtnr_v2,
+                                demo_prnt_prtnr_bio, demo_prtnr_empl_v2, demo_prtnr_empl_time, demo_prtnr_income_v2, demo_comb_income_v2, demo_roster_v2, demo_child_time_v2,
+                                demo_child_time2_v2, demo_prim, race.ethnicity.4level, Ethnicity, Sex))
+
+dim(Dems)
+#Should have 11875 rows and 19 columns
+
+
+#Identify and count missing values
+sapply(Dems, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(Dems))
+colnames(Dems)[colSums(is.na(Dems))>0]
+
+
+#NIH get all age corrected scores  
+NIHTB <- read.csv("abcd_tbss01.csv", header = TRUE)
+
+myvars <- c("subjectkey",
+            "eventname",
+            "nihtbx_picvocab_agecorrected",
+            "nihtbx_flanker_agecorrected",
+            "nihtbx_list_agecorrected",
+            "nihtbx_cardsort_agecorrected",
+            "nihtbx_pattern_agecorrected",
+            "nihtbx_picture_agecorrected",
+            "nihtbx_reading_agecorrected")
+
+NIHTB <- NIHTB[myvars]
+
+#Subset to baseline assessments only 
+NIHTB <- subset(NIHTB, eventname == "baseline_year_1_arm_1")
+
+dim(NIHTB)
+#Should have 11873 rows and 9 columns
+
+#Identify and count missing values
+sapply(NIHTB, function(x) sum(is.na(x)))
+
+#Redundant verification for missing value calculation
+table(is.na(NIHTB))
+colnames(NIHTB)[colSums(is.na(NIHTB))>0]
+
+#Sleep Disturbance SDS
+SDS <- read.csv("abcd_sds01.csv", header = TRUE)
+
+#Remove extra identifiers
+myvars <- c("subjectkey",
+            "eventname",
+            "sleepdisturb1_p",
+            "sleepdisturb2_p",
+            "sleepdisturb3_p",
+            "sleepdisturb4_p",
+            "sleepdisturb5_p",
+            "sleepdisturb6_p",	    
+            "sleepdisturb7_p",
+            "sleepdisturb8_p",
+            "sleepdisturb9_p",	    
+            "sleepdisturb10_p",
+            "sleepdisturb11_p",
+            "sleepdisturb12_p",	    
+            "sleepdisturb13_p",
+            "sleepdisturb14_p",
+            "sleepdisturb15_p",	    
+            "sleepdisturb16_p",
+            "sleepdisturb17_p",
+            "sleepdisturb18_p",	    
+            "sleepdisturb19_p",
+            "sleepdisturb20_p",
+            "sleepdisturb21_p",	    
+            "sleepdisturb22_p",
+            "sleepdisturb23_p",
+            "sleepdisturb24_p",	    
+            "sleepdisturb25_p",
+            "sleepdisturb26_p")
+
+SDS <- SDS[myvars]
+
+#Subset to baseline assessments only 
+SDS <- subset(SDS, eventname == "baseline_year_1_arm_1")
+
+#SDS Subscale Calculations
+
+SDS$Init_Main <- rowSums(SDS[,c("sleepdisturb1_p", "sleepdisturb2_p", "sleepdisturb3_p", "sleepdisturb4_p", "sleepdisturb5_p", "sleepdisturb11_p")])
+
+SDS$Breath <- rowSums(SDS[,c("sleepdisturb13_p", "sleepdisturb14_p", "sleepdisturb15_p")])
+
+SDS$Arousal <-rowSums(SDS[,c("sleepdisturb17_p", "sleepdisturb20_p", "sleepdisturb21_p")])
+
+SDS$Transition <- rowSums(SDS[,c("sleepdisturb6_p", "sleepdisturb7_p", "sleepdisturb8_p", "sleepdisturb12_p", "sleepdisturb18_p", "sleepdisturb19_p")])
+
+SDS$Somnolence <- rowSums(SDS[,c("sleepdisturb22_p", "sleepdisturb23_p", "sleepdisturb24_p", "sleepdisturb25_p", "sleepdisturb26_p")])
+
+SDS$Overall <- rowSums (SDS[,c("Init_Main", "Breath", "Arousal", "Transition", "Somnolence")])
+
+#Drop redundant or constructional variables to assist with imputation
+SDS <- subset(SDS, select = c(subjectkey, eventname, Overall))
+
+
+dim(SDS)
+#Should have 11875 rows and 3 columns
+
+#Identify and count missing values
+sapply(SDS, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(SDS))
+colnames(SDS)[colSums(is.na(SDS))>0]
+
+
+#CBCL
+CBCL <- read.csv("abcd_cbcls01.csv", header = TRUE)
+
+#Extract DSM5 T scores subscales
+myvars <- c("subjectkey",
+            "eventname",
+            "cbcl_scr_dsm5_depress_t",
+            "cbcl_scr_dsm5_anxdisord_t",
+            "cbcl_scr_dsm5_somaticpr_t",
+            "cbcl_scr_dsm5_adhd_t",
+            "cbcl_scr_dsm5_opposit_t",
+            "cbcl_scr_dsm5_conduct_t")
+
+CBCL <- CBCL[myvars]
+
+#Subset to baseline assessments only 
+CBCL <- subset(CBCL, eventname == "baseline_year_1_arm_1")
+
+dim(CBCL)
+#Should have 11875 rows and 8 columns
+
+#Identify and count missing values
+sapply(CBCL, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(CBCL))
+colnames(CBCL)[colSums(is.na(CBCL))>0]
+
+
+#Import Ohio State TBI Data
+OSTBI <- read.csv("abcd_otbi01.csv", header = TRUE)
+
+
+myvars <- c("subjectkey",
+            "eventname",
+            "tbi_1",
+            "tbi_1b",
+            "tbi_1c",
+            "tbi_1d",
+            "tbi_2",
+            "tbi_2b",
+            "tbi_2c",
+            "tbi_2d",
+            "tbi_3",
+            "tbi_3b",
+            "tbi_3c",
+            "tbi_3d",
+            "tbi_4",
+            "tbi_4b",
+            "tbi_4c",
+            "tbi_4d",
+            "tbi_5",
+            "tbi_5b",
+            "tbi_5c",
+            "tbi_5d",
+            "tbi_6o",
+            "tbi_6p",
+            "tbi_6q",
+            "tbi_6r",
+            "tbi_6s",
+            "tbi_7a",
+            "tbi_7c1",
+            "tbl_7c2",
+            "tbi_7e",
+            "tbi_7f",
+            "tbi_7g",
+            "tbi_7i",
+            "tbi_7k",
+            "tbi_7l",
+            "tbi_8g",
+            "tbi_8i",
+            "tbi_8k",
+            "tbi_8l")
+
+OSTBI <- OSTBI[myvars]
+
+#Correct typo in variable 7c2
+OSTBI$tbi_7c2 <- OSTBI$tbl_7c2
+OSTBI <- subset(OSTBI, select = -c(tbl_7c2))
+
+#Subset to baseline assessments only 
+OSTBI <- subset(OSTBI, eventname == "baseline_year_1_arm_1")
+
+dim(OSTBI)
+#Should have 11875 rows at 40 columns
+
+#Identify and count missing values
+#Note: Data following each items are only counted missing if preceding items tbi_1, tbi_2, tbi_3, tbi_4, tbi_5, tbi_6o, or tbi_7a are missing
+#E.g., tbi_1b entry of NA is not counted missing if tbi_1 is 0.
+sapply(OSTBI, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(OSTBI))
+colnames(OSTBI)[colSums(is.na(OSTBI))>0]
+
+#Remove missing OSTBI data
+OSTBI[is.na(OSTBI$tbi_1),] 
+
+OSTBI <- OSTBI[complete.cases(OSTBI$tbi_1),]
+dim(OSTBI)
+#Should have 11870 rows and 40 columns
+
+#Import TBI Summary Data
+TBI <- read.csv("abcd_tbi01.csv", header = TRUE)
+
+myvars <- c("subjectkey",
+            "eventname",
+            "tbi_ss_ntbiloc",
+            "tbi_ss_ntbiloc_nm",
+            "tbi_ss_ntbiloc30",
+            "tbi_ss_ntbiloc30_nm",
+            "tbi_ss_nmrpi",
+            "tbi_ss_nmrpi_nm",
+            "tbi_ss_agefirst",
+            "tbi_ss_agefirst_nm",
+            "tbi_ss_before15",
+            "tbi_ss_worst_overall")
+
+TBI <- TBI[myvars]
+
+#Subset to baseline assessments only 
+TBI <- subset(TBI, eventname == "baseline_year_1_arm_1")
+
+dim(TBI)
+#Should have 11875 rows and 12 columns
+
+#Identify and count missing values
+sapply(TBI, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(TBI))
+colnames(TBI)[colSums(is.na(TBI))>0]
+
+#Import Adult Self-Report Internalizing T Scores
+ASR <- read.csv("abcd_asrs01.csv", header=TRUE)
+
+myvars <- c("subjectkey",
+            "eventname",
+            "asr_scr_depress_t",
+            "asr_scr_anxdisord_t",
+            "asr_scr_somaticpr_t")
+
+#Subset to baseline assessment only
+ASR <- subset(ASR, eventname == "baseline_year_1_arm_1")
+
+ASR <- ASR[myvars]
+dim(ASR)
+#Should have 11875 rows and 5 columns
+
+#Identify and count missing values
+sapply(ASR, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(ASR))
+colnames(ASR)[colSums(is.na(ASR))>0]
+
+#T scores only valid up to age 70. Merge ASR with parent age and remove ASR data for those over 70
+ParentAge <- Dems
+
+myvars <- c("subjectkey",
+            "demo_prnt_age_v2")
+
+ParentAge <- ParentAge[myvars]
+
+ASR <- merge(ASR, ParentAge, by="subjectkey", all=TRUE)
+
+ASR <- subset(ASR, (demo_prnt_age_v2 <= 70 | is.na(demo_prnt_age_v2)))
+dim(ASR)
+#Should have 11863 rows and 6 columns
+
+#Import nesting variables included in LT01 and ACS
+LT01 <- read.csv("abcd_lt01.csv", header = TRUE)
+
+myvars <- c("subjectkey",
+            "eventname",
+            "site_id_l")
+
+#Subset to baseline assessments only 
+LT01 <- subset(LT01, eventname == "baseline_year_1_arm_1")
+
+LT01 <- LT01[myvars]
+dim(LT01)
+#Should have 11875 rows and 3 columns
+
+#Identify and count missing values
+sapply(LT01, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(LT01))
+colnames(LT01)[colSums(is.na(LT01))>0]
+
+ACS <- read.csv("acspsw03.csv", header = TRUE)
+
+myvars <- c("subjectkey",
+            "eventname",
+            "rel_family_id")
+
+#Subset to baseline assessments only
+ACS <- subset(ACS, eventname == "baseline_year_1_arm_1")
+
+ACS <- ACS[myvars]
+dim(ACS)
+#Should have 11875 rows and 3 columns
+
+#Identify and count missing values
+sapply(ACS, function(x) sum(is.na(x)))
+
+#Redunant verification for missing value calculation
+table(is.na(ACS))
+colnames(ACS)[colSums(is.na(ACS))>0]
+
+#Drop all but one eventname variable to simplify merging commands. Maintain eventname in Dems.
+ACS <- subset(ACS, select = -c(eventname))
+ASR <- subset(ASR, select = -c(eventname, demo_prnt_age_v2))
+CBCL <- subset(CBCL, select = -c(eventname))
+LT01 <- subset(LT01, select = -c(eventname))
+NIHTB <- subset(NIHTB, select = -c(eventname))
+OSTBI <- subset(OSTBI, select = -c(eventname))
+SDS <- subset(SDS, select = -c(eventname))
+TBI <- subset(TBI, select = -c(eventname))
+
+
+
+#Merge without TBI measures for imputation. 
+#TBI measures are excluded from imputation to ensure accuracy in later analysis
+myData <- merge(Dems, NIHTB, by="subjectkey", all=TRUE)
+myData <- merge(myData, SDS, by="subjectkey", all=TRUE)
+myData <- merge(myData, CBCL, by="subjectkey", all=TRUE)
+myData <- merge(myData, LT01, by="subjectkey", all=TRUE)
+myData <- merge(myData, ACS, by="subjectkey", all=TRUE)
+myData <- merge(myData, ASR, by="subjectkey", all=TRUE)
+dim(myData)
+#Should have 11875 rows and 38 columns   
+
+
+#Identify and count missing values
+sapply(myData, function(x) sum(is.na(x)))
+missing <- sapply(myData, function(x) sum(is.na(x)))
+#write.csv(missing, file="init_missing.csv")
+
+
+#Remove cloumns missing >5% data inappropriately **Manually identify from line above command (5% = .05*11875 ~ 594)
+#Note: combined income (demo_comb_income_v2) is retained in accordance with study protocol
+validcolumns <- subset(myData, select = -c(demo_child_time2_v2, demo_prnt_empl_time, demo_prtnr_empl_time, demo_prtnr_empl_v2, demo_prnt_prtnr_bio, demo_prtnr_income_v2, demo_prnt_income_v2))
+#Should have 11875 rows and 31 columns
+
+#Verify missing columns don't exceed 5%
+sapply(validcolumns, function(x) sum(is.na(x)))
+
+#Calculate percent missing rows
+#To be greater than 5%, count needs to be higher than the length of full dataset including TBI measures = validcolumns(31) + OSTBI(39) + TBI(11) = 81
+percentmiss = function(x) {(sum(is.na(x))/81) * 100}
+missingsubjects = apply(validcolumns,1,percentmiss)
+summary(missingsubjects)
+table(missingsubjects)
+
+#Exclude rows (subjects) missing > 5%
+validtotal = validcolumns[ missingsubjects < 5.01, ]
+excludedpeople = validcolumns[ missingsubjects > 5, ]
+dim(validtotal)
+#Should have 11655 rows and 31 columns
+dim(excludedpeople)
+#Should have 220 rows and 31 columns
+
+
+#Adjust certain variable class types prior to imputation
+lapply(validtotal, class)
+
+#Originally, employment status was included, but its inclusion resulted in imputation that would not converge. As such ,it was removed. These lines of code are kept for reference.
+#Note here: To simplify coding, level 2 of parent employment, which indicates "Temporarily Laid Off" is coded as "Unemployed" because other categories will collapse into it.
+#validtotal$demo_prnt_empl_v2 <- factor(validtotal$demo_prnt_empl_v2,
+#levels = c(1,2,9,10,3,11,4,5,6,7,8),
+#labels = c("Employed", "Unemployed", "Sick Leave", "Maternity Leave", "Looking for Work", "Unemployed Not Looking for Work", "Retired", "Disabled", "Stay at Home Parent", "Student", "Other"))
+
+#validtotal$employment <- validtotal$demo_prnt_empl_v2
+#validtotal$employment[validtotal$demo_prnt_empl_v2=="Employed" | validtotal$demo_prnt_empl_v2=="Sick Leave" |
+#validtotal$demo_prnt_empl_v2=="Maternity Leave"] = "Employed"
+#validtotal$employment[validtotal$demo_prnt_empl_v2=="Unemployed" | validtotal$demo_prnt_empl_v2=="Looking for Work" | 
+#validtotal$demo_prnt_empl_v2 =="Unemployed Not Looking for Work" | validtotal$demo_prnt_empl_v2=="Disabled" | 
+#validtotal$demo_prnt_empl_v2=="Stay at Home Parent"] = "Unemployed"
+#validtotal$employment[validtotal$demo_prnt_empl_v2=="Student" | validtotal$demo_prnt_empl_v2=="Retired" | validtotal$demo_prnt_empl_v2=="Other"] = "Other"
+#validtotal$employment = droplevels(validtotal$employment)
+#validtotal <- subset(validtotal, select = -c(demo_prnt_empl_v2))
+
+
+validtotal$demo_prnt_prtnr_v2 <- factor(validtotal$demo_prnt_prtnr_v2,
+                                        levels = c(1,2),
+                                        labels = c("Yes", "No"))
+
+validtotal$Ethnicity <- factor(validtotal$Ethnicity,
+                                        levels = c(0,1),
+                                        labels = c("Not Hispanic", "Hispanic"))
+
+validtotal$demo_child_time_v2 <- factor(validtotal$demo_child_time_v2,
+                                        levels = c(1,0),
+                                        labels = c("Yes", "No"))
+
+validtotal$demo_prim <- factor(validtotal$demo_prim,
+                               levels = c(1,2,3,4,5),
+                               labels = c("Biological Mother","Biological Father","Adoptive Parent","Custodial Parent","Other"))                                                                                    
+
+validtotal$nihtbx_picvocab_agecorrected <- as.integer(validtotal$nihtbx_picvocab_agecorrected)
+
+validtotal$nihtbx_flanker_agecorrected <- as.integer(validtotal$nihtbx_flanker_agecorrected)
+
+validtotal$nihtbx_list_agecorrected <- as.integer(validtotal$nihtbx_list_agecorrected)
+
+validtotal$nihtbx_cardsort_agecorrected <- as.integer(validtotal$nihtbx_cardsort_agecorrected)
+
+validtotal$nihtbx_pattern_agecorrected <- as.integer(validtotal$nihtbx_pattern_agecorrected)
+
+validtotal$nihtbx_picture_agecorrected <- as.integer(validtotal$nihtbx_picture_agecorrected)
+
+validtotal$nihtbx_reading_agecorrected <- as.integer(validtotal$nihtbx_reading_agecorrected)
+
+
+#Load Imputation Matrices
+library(mice)
+init = mice(validtotal, m=1, maxit=0)
+meth = init$meth
+pred = init$pred
+
+#Remove variables from prediction matrix that shouldn't have influence
+pred[, c("subjectkey", "eventname", "race.ethnicity.4level")]=0
+
+#Specify method for imputation for categorical variables.
+#Method for continuous data is predictive mean matching (pmm) by default
+
+meth[c("Sex","demo_prnt_prtnr_v2","demo_child_time_v2","Ethnicity")]="logreg"
+meth["race.ethnicity.4level"]="polyreg"
+meth["demo_comb_income_v2"]="polr"
+
+
+
+
+#Impute data
+imputed <- mice(validtotal, method=meth, predictorMatrix=pred, mech = "MNAR", seed=22)
+
+
+#Create new imputed dataset
+validdata <- complete(imputed)
+
+#Verify no missing columns 
+sapply(validdata, function(x) sum(is.na(x)))
+dim(validdata)
+
+#Merge Datasets with all measures
+
+myData <- merge(OSTBI, TBI, by="subjectkey")
+myData <- merge(validdata, myData, by="subjectkey")
+
+
+##Save data
+write.csv(myData, "ABCD_mTBI_Dataset_Final_2.csv")
+
+
