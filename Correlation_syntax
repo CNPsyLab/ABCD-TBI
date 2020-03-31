@@ -1,0 +1,61 @@
+setwd("~/...")
+
+tbi <- read.csv("ABCD_mTBI_Dataset_Final_2.csv", header=TRUE)
+
+################################
+################################
+## Rename Some Core Variables ##
+################################
+################################
+
+names(tbi)[which(names(tbi)=="race.ethnicity.4level")] = "Race"
+names(tbi)[which(names(tbi)=="demo_comb_income_v2")] = "HouseholdIncome"
+
+
+names(tbi)[which(names(tbi)=="nihtbx_picvocab_agecorrected")] = "PicVocab"
+names(tbi)[which(names(tbi)=="nihtbx_flanker_agecorrected")] = "Flanker"
+names(tbi)[which(names(tbi)=="nihtbx_list_agecorrected")] = "List"
+names(tbi)[which(names(tbi)=="nihtbx_cardsort_agecorrected")] = "CardSort"
+names(tbi)[which(names(tbi)=="nihtbx_pattern_agecorrected")] = "Pattern"
+names(tbi)[which(names(tbi)=="nihtbx_picture_agecorrected")] = "Picture"
+names(tbi)[which(names(tbi)=="nihtbx_reading_agecorrected")] = "Reading"
+
+names(tbi)[which(names(tbi)=="cbcl_scr_dsm5_depress_t")] = "CBCL_Depression"
+names(tbi)[which(names(tbi)=="cbcl_scr_dsm5_anxdisord_t")] = "CBCL_Anxiety"
+names(tbi)[which(names(tbi)=="cbcl_scr_dsm5_somaticpr_t")] = "CBCL_Somatic"
+names(tbi)[which(names(tbi)=="cbcl_scr_dsm5_adhd_t")] = "CBCL_ADHD"
+names(tbi)[which(names(tbi)=="cbcl_scr_dsm5_opposit_t")] = "CBCL_ODD"
+names(tbi)[which(names(tbi)=="cbcl_scr_dsm5_conduct_t")] = "CBCL_Conduct"
+
+names(tbi)[which(names(tbi)=="asr_scr_depress_t")] = "ASR_Depression"
+names(tbi)[which(names(tbi)=="asr_scr_anxdisord_t")] = "ASR_Anxiety"
+names(tbi)[which(names(tbi)=="asr_scr_somaticpr_t")] = "ASR_Somatic"
+
+
+
+
+myvars <- c("PicVocab",
+           "Flanker",
+           "List",
+           "CardSort",
+           "Pattern",
+           "Picture",
+           "Reading",
+           "Overall",
+           "CBCL_Depression",
+           "CBCL_Anxiety",
+           "CBCL_Somatic",
+           "CBCL_ADHD",
+           "CBCL_ODD",
+           "CBCL_Conduct",
+           "ASR_Depression",
+           "ASR_Anxiety",
+           "ASR_Somatic",
+           "HouseholdIncome",
+           "Ethnicity",
+           "Sex")
+
+tbi <- tbi[myvars]
+
+library(apaTables)
+apa.cor.table(tbi, filename="Correlation_Table_APA.doc", table.number=2)
