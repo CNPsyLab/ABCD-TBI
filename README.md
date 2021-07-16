@@ -1,4 +1,4 @@
-# R and SPSS syntax for the processing and analysis of data for the manuscript currently under review, "Prevalence and Correlates of Concussion in Children: Data from the Adolescent Brain Cognitive Development Study".
+# R and SPSS syntax for the processing and analysis of data for the manuscript, "Prevalence and Correlates of Concussion in Children: Data from the Adolescent Brain Cognitive Development Study", published as a registered report in Cortex (https://www.sciencedirect.com/science/article/abs/pii/S0010945220302756).
 
 Certain sets of analysis utilize transformations from other analyses. As such, we recommend replication proceed in the following order:
   1. Datagrab and Imputation
